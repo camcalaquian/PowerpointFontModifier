@@ -9,9 +9,15 @@ import Typography from '@material-ui/core/Typography';
 import FontAttributePicker from 'Components/Hooks/FontAttributePicker';
 import classNames from 'classnames';
 import Slide from '@material-ui/core/Slide';
-
+import Snackbar from '@material-ui/core/Snackbar';
+import IconButton from '@material-ui/core/IconButton';
+import CloseIcon from '@material-ui/icons/Close';
+import CloudDownload from '@material-ui/icons/CloudDownload';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Checkbox from '@material-ui/core/Checkbox';
+import Button from '@material-ui/core/Button';
 //#region styles
-const styles = {
+const styles = theme => ({
   container: {
     borderStyle: 'dashed',
     borderColor: '194D33',
@@ -52,8 +58,11 @@ const styles = {
   },
   downloadlink:{
     display: 'none'
-  }
-};
+  },
+  close: {
+    padding: theme.spacing.unit / 2,
+  },
+});
 //#endregion
 
 function Dropzone(props) {
@@ -62,11 +71,16 @@ function Dropzone(props) {
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFileSelected, setIsFileSelected] = useState(false);
-  const [fontAttributes, setFontAttributes] = useState([]);
+  const [isShowSnackBar, setIsShowSnackBar] = useState(false);
+  const [isAutoDownload, setIsAutoDownload] = useState(true);
   const [downloadLink, setDownloadLink] = useState('');
+  const [snackBarMessage, setSnackBarMessage] = useState('');
+  const [fontAttributes, setFontAttributes] = useState([]);
+  
   const downloadLinkRef = useRef(null);
   const onDrop = (files) => {
     setIsFileSelected(true);
+    setDownloadLink('');
   }
   //POST file to web API for processing
   const onUploadClicked = () => {
@@ -93,10 +107,12 @@ function Dropzone(props) {
   //Error handler for POST request 
   const errorHandler = (err, res) =>{
     if (err && err.status === 404) {
-      alert('Service is offline');
+      setSnackBarMessage('Service is offline');
+      setIsShowSnackBar(true);
     }
     else if (err) {
-      alert('An error occurred, make sure your file is valid');
+      setSnackBarMessage('An error occurred, make sure your file is valid');
+      setIsShowSnackBar(true);
     }
     setIsUploading(false);
     setIsProcessing(false);
@@ -116,10 +132,14 @@ function Dropzone(props) {
   const onFileProcessed = (res) => {
     if(res.ok){
       setDownloadLink(res.text);
-      setTimeout(()=>downloadLinkRef.current.click(), 200);
+      if(isAutoDownload) setTimeout(()=>{downloadLinkRef.current.click(); setDownloadLink('')}, 200);
+      
+      setSnackBarMessage(`${acceptedFiles[0].name} has been processed successfully`);
+      setIsShowSnackBar(true);
     }
     else{
-      alert('An error occurred, make sure your file is valid');
+      setSnackBarMessage('An error occurred, make sure your file is valid');
+      setIsShowSnackBar(true);
     }
     setIsUploading(false);
     setIsProcessing(false);
@@ -130,6 +150,15 @@ function Dropzone(props) {
     console.log('updated font values');
     setFontAttributes({name: data.name, size: data.size});
   }
+
+  //Closes the snackbar
+  const handleClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    setIsShowSnackBar(false);
+  };
 
   //Dropzone settings
   const {acceptedFiles, getRootProps, getInputProps} = useDropzone({
@@ -143,13 +172,17 @@ function Dropzone(props) {
     <div>
       <div className={classes.container}>
         <div {...getRootProps()} className={classes.dropzone}>
-          {(!isProcessing && !isFileSelected) && <div className={classNames(classes.center, classes.instruction)}><input {...getInputProps()} />
+          {(!isProcessing && !isFileSelected && !isUploading) && <div className={classNames(classes.center, classes.instruction)}><input {...getInputProps()} />
           <div>Drag 'n' drop some files here, or click to select files</div>
           <div>Only *.ppt and *.pptx will be accepted</div></div>}
-          {isProcessing &&  <div className={classes.center}><CircularProgress/><Typography color="textSecondary" gutterBottom>Processing File...</Typography></div>}
+
+          {(isProcessing || isUploading) &&  <div className={classes.center}><CircularProgress/>
+            <Typography color="textSecondary" gutterBottom>{isProcessing ? 'Processing File...' : 'Uploading File...'}</Typography>
+          </div>}
+         
           <Slide direction="up" in={isFileSelected} mountOnEnter unmountOnExit>
             <div className={classes.filecard}>
-              <FileCard onUploadClicked={onUploadClicked} onCancelClicked={onCancelClicked} selectedFileName={isFileSelected ? acceptedFiles[0].name : ''}/>
+              <FileCard onUploadClicked={onUploadClicked} onCancelClicked={onCancelClicked} selectedFileName={isFileSelected && acceptedFiles !== null && acceptedFiles.length ? acceptedFiles[0].name : ''}/>
             </div>
           </Slide>
         </div>
@@ -157,10 +190,43 @@ function Dropzone(props) {
       </div>
       <div className={classes.fontattributepicker}>
         <FontAttributePicker fontAttributesChanged={updateFontValues}/>
+        <FormControlLabel
+          control={
+          <Checkbox checked={isAutoDownload} onChange={(event) => setIsAutoDownload(event.target.checked)}
+                    />
+          }
+          label="Auto download"
+        />
       </div>
-
+      <Snackbar
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          open={isShowSnackBar}
+          autoHideDuration={6000}
+          onClose={handleClose}
+          ContentProps={{
+            'aria-describedby': 'message-id',
+          }}
+          message={<span id="message-id">{snackBarMessage}</span>}
+          action={[
+            <IconButton
+              key="close"
+              aria-label="Close"
+              color="inherit"
+              className={classes.close}
+              onClick={handleClose}
+            >
+              <CloseIcon />
+            </IconButton>,
+          ]}
+        />
       <aside>
-        <a href={downloadLink} download="output.pptx" ref={downloadLinkRef} className={classes.downloadlink}>Download link</a>
+        <a href={downloadLink} download="output.pptx" ref={downloadLinkRef} className={classes.downloadLink}></a>
+        {!isAutoDownload && downloadLink != '' && !isFileSelected && <Button variant="contained" color="primary" className={classes.button} onClick={() => {downloadLinkRef.current.click(); setDownloadLink('');}}>
+        <CloudDownload />&nbsp;Click here to download your file
+        </Button>}
       </aside>
     </div>
   )

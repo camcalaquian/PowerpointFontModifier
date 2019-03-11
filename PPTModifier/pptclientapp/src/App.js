@@ -3,12 +3,10 @@ import logo from './resources/logo.svg';
 import linkedin from './resources/iconmonstr-linkedin-3.svg'
 import './App.css';
 import Dropzone from 'Components/Hooks/Dropzone';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faUpload } from '@fortawesome/free-solid-svg-icons';
 import { faFilePowerpoint } from '@fortawesome/free-solid-svg-icons';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import { falink } from '@fortawesome/free-solid-svg-icons';
 
 library.add(faUpload);
 library.add(faFilePowerpoint);
@@ -31,7 +29,7 @@ class App extends Component {
               target="_blank"
               rel="noopener noreferrer"
             >
-              linkedin
+              linkedIn
             </a>
           </div>
          
