@@ -15,7 +15,7 @@ https://nodejs.org/en/download/current/
 1. First make sure that the prerequisites above are satisfied.
 2. Download the solution
 3. Extract and open the solution in Visual Studio
-4. Run rebuild to restore nuget packages and npm packages. This may take a while depending on your internet connection (3-10 minutes).
+4. Run rebuild to restore nuget packages and npm packages. This may take a while depending on your internet connection (3-10 minutes). If this somehow fails please run npm install inside the /pptclientapp 
 5. Click IIS Express to start the server and client app.
 
 ### Others
